@@ -8,17 +8,16 @@ import cors from 'cors';
 const app = express();
 const port = 3000;
 
-
-app.all('/api/auth/{*any}', toNodeHandler(auth));
-
 const corsOptions = {
     origin: process.env.TRUSTED_ORIGINS?.split(',') || [],
     credentials: true,
 };
+
 app.use(cors(corsOptions));
 
-
 app.use(express.json());
+
+app.all('/api/auth/{*any}', toNodeHandler(auth));
 
 
 app.get('/', (req: Request, res: Response) => {
