@@ -2,32 +2,53 @@ import React, { useEffect, useState } from 'react'
 import type { Project } from '../types/index.ts';
 import { Loader2Icon, Plus, PlusIcon, Trash2Icon, TrashIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { dummyProjects } from '../assets/assets.ts';
 import Footer from '../components/Footer.tsx';
+import api from '@/configs/axios.ts';
+import { toast } from 'sonner';
+import { authClient } from '@/lib/auth-client.ts';
 
 
 const MyProjects = () => {
+    const {data:session,isPending} = authClient.useSession()
     const [loading, setLoading] = useState(true);
     const [projects, setProjects] = useState<Project[]>([]);
     const navigate = useNavigate()
 
     const fetchProjects = async () => {
-        setProjects(dummyProjects)
-        // Simulate an API call to fetch projects
-        setTimeout(() => {
+        try {
+            const {data} = await api.get(`/api/user/projects`)
+            setProjects(data.projects)
             setLoading(false)
-        },1000)
+        } catch (error:any) {
+            console.log(error);
+            toast.error(error?.response?.data?.message  || error.message )
+        }
 
     }
     const deleteProject = async (projectId: string) => {
         // Simulate an API call to delete the project
+        try {
+            const confirm = window.confirm('Are You Sure You want to Delete This Project?');
+            if (!confirm) return;
+            const {data} = await api.delete(`/api/project/${projectId}`)
+            toast.success(data.message);
+            fetchProjects()
+        } catch (error:any) {
+            console.log(error);
+            toast.error(error?.response?.data?.message  || error.message )
+        }
        
     }
         
-
     useEffect(() => {
-        fetchProjects();
-    }, []);
+        if(session?.user && !isPending){
+            fetchProjects();
+        }else if (!isPending && !session?.user) {
+            navigate('/');
+            toast('Please Login To View your Projects..!!');
+        }
+        
+    }, [session?.user])
 
     return (
         <>
@@ -77,13 +98,13 @@ const MyProjects = () => {
                                         <div onClick={(e) => e.stopPropagation} className='flex justify-between items-center mt-6'>
                                             <span className='text-xs text-gray-500'>{new Date(project.createdAt).toLocaleDateString()}</span>
                                         
-                                        <div className='flex gap-3 text-white text-sm'>
-                                            <button onClick={() => navigate(`/preview/${project.id}`)} className='px-3 py-1.5 bg-white/10 hover:bg-white/15 rounded-md transition-all'>
-                                                Preview
-                                            </button>
-                                            <button onClick={() => navigate(`/projects/${project.id}`)} className='px-3 py-1.5 bg-white/10 hover:bg-white/15 rounded-md transition-colors'>
-                                                Open
-                                            </button>
+                                            <div className='flex gap-3 text-white text-sm'>
+                                                <button onClick={() => navigate(`/preview/${project.id}`)} className='px-3 py-1.5 bg-white/10 hover:bg-white/15 rounded-md transition-all'>
+                                                    Preview
+                                                </button>
+                                                <button onClick={() => navigate(`/projects/${project.id}`)} className='px-3 py-1.5 bg-white/10 hover:bg-white/15 rounded-md transition-colors'>
+                                                    Open
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
@@ -102,7 +123,7 @@ const MyProjects = () => {
                 ) : (
                     <div className='flex flex-col items-center justify-center h-[80vh] '>
                         <h1 className='text-3xl font-semibold text-gray-300 '>You Have No Projects!</h1>
-                        <button className='text-white px-7 py-2 rounded-md bg-indigo-500 hover:bg-indigo-600 active:scale-95 transition-all'>
+                        <button onClick={() => navigate('/')}  className='text-white px-7 py-2 rounded-md bg-indigo-500 hover:bg-indigo-600 active:scale-95 transition-all'>
                             Create New
                         </button>
                     </div>

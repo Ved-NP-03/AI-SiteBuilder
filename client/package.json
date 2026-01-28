@@ -22,6 +22,7 @@
     "@radix-ui/react-separator": "^1.1.8",
     "@radix-ui/react-tooltip": "^1.2.8",
     "@tailwindcss/vite": "^4.1.18",
+    "axios": "^1.13.3",
     "better-auth": "^1.4.13",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
