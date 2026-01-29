@@ -5,6 +5,7 @@ import 'dotenv/config';
 import cors from 'cors';
 import userRouter from './routes/userRoutes.js';
 import projectRouter from './routes/projectRoutes.js';
+import { stripeWebhook } from './controllers/stripeWebhook.js';
 
 
 const app = express();
@@ -15,7 +16,11 @@ const corsOptions = {
     credentials: true,
 };
 
-app.use(cors(corsOptions));
+app.use(cors(corsOptions))
+
+app.post('/api/stripe', express.raw({type:'application/json'}),stripeWebhook )
+
+
 
 app.use(express.json());
 app.all('/api/auth/{*any}', toNodeHandler(auth));

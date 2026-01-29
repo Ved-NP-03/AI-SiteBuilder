@@ -2,8 +2,9 @@ import React, { useEffect, useState } from 'react'
 import type { Project } from '../types/index.ts';
 import { Loader2Icon, Plus, PlusIcon, Trash2Icon, TrashIcon } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { dummyProjects } from '../assets/assets.ts';
 import Footer from '../components/Footer.tsx';
+import api from '@/configs/axios.ts';
+import { toast } from 'sonner';
 
 
 const Community = () => {
@@ -12,15 +13,16 @@ const Community = () => {
     const navigate = useNavigate()
 
     const fetchProjects = async () => {
-        setProjects(dummyProjects)
-        // Simulate an API call to fetch projects
-        setTimeout(() => {
+        try {
+            const {data} = await api.get('/api/project/published');
+            setProjects(data.projects)
             setLoading(false)
-        }, 1000)
+        } catch (error:any) {
+            console.log(error);
+            toast.error(error?.response?.data?.message  || error.message )
+        }
 
     }
-    
-        
 
     useEffect(() => {
         fetchProjects();

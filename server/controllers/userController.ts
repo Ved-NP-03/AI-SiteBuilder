@@ -1,8 +1,11 @@
 import { Request, Response } from 'express'
 import prisma from '../lib/prisma.js';
 import openai from '../configs/openai.js';
-// GET USER CREDITS 
+import Stripe from 'stripe'
+import { date } from 'better-auth';
 
+
+// GET USER CREDITS 
 export const getUserCredits = async (req: Request, res: Response) => {
     try {
         const userId = req.userId;
@@ -16,7 +19,7 @@ export const getUserCredits = async (req: Request, res: Response) => {
 
         res.json({ credits: user?.credits });
 
-    } catch (error: any) {  
+    } catch (error: any) {
         console.log(error.code || error.message);
         res.status(500).json({ message: error.message });
     }
@@ -154,19 +157,19 @@ export const createUserProject = async (req: Request, res: Response) => {
 
         const code = codeGenerationResponse.choices[0].message.content || '';
 
-         if (!code) {
+        if (!code) {
             await prisma.conversation.create({
-            data: {
-                role: 'assistant',
-                content: "Unable To generate code pls try again !!",
-                projectId:project.id
-            }
-        })
-        await prisma.user.update({
-            where: { id: userId },
-            data: { credits: { increment: 5 } }
-        })
-        return;
+                data: {
+                    role: 'assistant',
+                    content: "Unable To generate code pls try again !!",
+                    projectId: project.id
+                }
+            })
+            await prisma.user.update({
+                where: { id: userId },
+                data: { credits: { increment: 5 } }
+            })
+            return;
         }
 
         //Create Verson for the project 
@@ -211,7 +214,6 @@ export const createUserProject = async (req: Request, res: Response) => {
 
 
 // controller func to get a single user project
-
 export const getUserProject = async (req: Request, res: Response) => {
     try {
 
@@ -223,15 +225,15 @@ export const getUserProject = async (req: Request, res: Response) => {
         const { projectId } = req.params as { projectId: string };
 
         const project = await prisma.websiteProject.findUnique({
-            where: { id : projectId, userId },
+            where: { id: projectId, userId },
             include: {
                 conversation: {
-                    orderBy: { timestamp: 'asc' }    
+                    orderBy: { timestamp: 'asc' }
                 },
                 versions: { orderBy: { timestamp: 'asc' } }
             }
         })
-        res.json({project})
+        res.json({ project })
 
     } catch (error: any) {
         console.log(error.code || error.message);
@@ -239,8 +241,8 @@ export const getUserProject = async (req: Request, res: Response) => {
     }
 }
 
-//controller function to get all user projects 
 
+//controller function to get all user projects 
 export const getUserProjects = async (req: Request, res: Response) => {
     try {
         const userId = req.userId;
@@ -250,9 +252,9 @@ export const getUserProjects = async (req: Request, res: Response) => {
 
         const projects = await prisma.websiteProject.findMany({
             where: { userId },
-            orderBy: {updatedAt : 'desc'}
+            orderBy: { updatedAt: 'desc' }
         })
-        res.json({projects})
+        res.json({ projects })
 
     } catch (error: any) {
         console.log(error.code || error.message);
@@ -260,8 +262,8 @@ export const getUserProjects = async (req: Request, res: Response) => {
     }
 }
 
-// controller function to toggle project publish
 
+// controller function to toggle project publish
 export const togglePublish = async (req: Request, res: Response) => {
     try {
         const userId = req.userId;
@@ -272,7 +274,7 @@ export const togglePublish = async (req: Request, res: Response) => {
         const { projectId } = req.params as { projectId: string };
 
         const project = await prisma.websiteProject.findUnique({
-            where: {id : projectId,userId}
+            where: { id: projectId, userId }
         })
 
         if (!project) {
@@ -280,12 +282,12 @@ export const togglePublish = async (req: Request, res: Response) => {
         }
 
         await prisma.websiteProject.update({
-            where: {id : projectId},
-            data:{isPublished: !project.isPublished}
+            where: { id: projectId },
+            data: { isPublished: !project.isPublished }
         })
-       
 
-        res.json({message:project.isPublished ? 'Project Unpublished' : 'Project Published Successfully'})
+
+        res.json({ message: project.isPublished ? 'Project Unpublished' : 'Project Published Successfully' })
 
     } catch (error: any) {
         console.log(error.code || error.message);
@@ -293,10 +295,73 @@ export const togglePublish = async (req: Request, res: Response) => {
     }
 }
 
+
 //controller func to buy creds 
 
 export const purchaseCredits = async (req: Request, res: Response) => {
+    try {
+        interface Plan {
+            credits: number;
+            amount: number;
+        }
 
+        const plans = {
+            basic: { credits: 100, amount: 5 },
+            pro: { credits: 400, amount: 19 },
+            Enterprise: { credits: 1000, amount: 49 },
+        }
+
+        const userId = req.userId;
+        const { planId } = req.body as { planId: keyof typeof plans }
+        const origin = req.headers.origin as string;
+
+        const plan: Plan = plans[planId]
+
+        if (!plan) {
+            return res.status(404).json({ message: 'Plan Not Found' });
+        }
+
+        const transaction = await prisma.transaction.create({
+            data: {
+                userId: userId!,
+                planId: req.body.planId,
+                amount: plan.amount,
+                credits: plan.credits
+            }
+        })
+
+        const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
+
+        const session = await stripe.checkout.sessions.create({
+            success_url: `${origin}/loading`,
+            cancel_url: `${origin}`,
+            line_items: [
+                {
+                    price_data: {
+                        currency: 'usd',
+                        product_data: {
+                            name: `AiSiteBuilder - ${plan.credits} Credits`
+                        },
+                        unit_amount: Math.floor(transaction.amount) * 100
+                    },
+                    quantity: 1
+                },
+            ],
+            mode: 'payment',
+            metadata:{
+                transactionId : transaction.id,
+                appId : 'ai-site-builder'
+            },
+            expires_at : Math.floor(Date.now()/1000) + 30*60, //expiry of payment in 30mins
+        });
+
+        res.json({payment_link :session.url})
+
+
+    } catch (error:any) {
+        console.log(error.code || error.message);
+        res.status(500).json({message:error.message});
+    }
 }
 
 

@@ -9,19 +9,19 @@ import { authClient } from '@/lib/auth-client.ts';
 
 
 const MyProjects = () => {
-    const {data:session,isPending} = authClient.useSession()
+    const { data: session, isPending } = authClient.useSession()
     const [loading, setLoading] = useState(true);
     const [projects, setProjects] = useState<Project[]>([]);
     const navigate = useNavigate()
 
     const fetchProjects = async () => {
         try {
-            const {data} = await api.get(`/api/user/projects`)
+            const { data } = await api.get(`/api/user/projects`)
             setProjects(data.projects)
             setLoading(false)
-        } catch (error:any) {
+        } catch (error: any) {
             console.log(error);
-            toast.error(error?.response?.data?.message  || error.message )
+            toast.error(error?.response?.data?.message || error.message)
         }
 
     }
@@ -30,24 +30,24 @@ const MyProjects = () => {
         try {
             const confirm = window.confirm('Are You Sure You want to Delete This Project?');
             if (!confirm) return;
-            const {data} = await api.delete(`/api/project/${projectId}`)
+            const { data } = await api.delete(`/api/project/${projectId}`)
             toast.success(data.message);
             fetchProjects()
-        } catch (error:any) {
+        } catch (error: any) {
             console.log(error);
-            toast.error(error?.response?.data?.message  || error.message )
+            toast.error(error?.response?.data?.message || error.message)
         }
-       
+
     }
-        
+
     useEffect(() => {
-        if(session?.user && !isPending){
+        if (session?.user && !isPending) {
             fetchProjects();
-        }else if (!isPending && !session?.user) {
+        } else if (!isPending && !session?.user) {
             navigate('/');
             toast('Please Login To View your Projects..!!');
         }
-        
+
     }, [session?.user])
 
     return (
@@ -97,21 +97,31 @@ const MyProjects = () => {
 
                                         <div onClick={(e) => e.stopPropagation} className='flex justify-between items-center mt-6'>
                                             <span className='text-xs text-gray-500'>{new Date(project.createdAt).toLocaleDateString()}</span>
-                                        
+
                                             <div className='flex gap-3 text-white text-sm'>
-                                                <button onClick={() => navigate(`/preview/${project.id}`)} className='px-3 py-1.5 bg-white/10 hover:bg-white/15 rounded-md transition-all'>
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation()
+                                                        navigate(`/preview/${project.id}`)
+                                                    }}
+                                                    className='px-3 py-1.5 bg-white/10 hover:bg-white/15 rounded-md transition-all'>
                                                     Preview
                                                 </button>
-                                                <button onClick={() => navigate(`/projects/${project.id}`)} className='px-3 py-1.5 bg-white/10 hover:bg-white/15 rounded-md transition-colors'>
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation()
+                                                        navigate(`/projects/${project.id}`)
+                                                    }}
+                                                    className='px-3 py-1.5 bg-white/10 hover:bg-white/15 rounded-md transition-colors'>
                                                     Open
                                                 </button>
                                             </div>
                                         </div>
                                     </div>
-                                    <div onClick = {e => e.stopPropagation()}>
-                                        <TrashIcon className='absolute top-3 right-3 scale-0 group-hover:scale-100 bg-white p-1.5 size-7 rounded text-red-500 text-xl cursor-pointer transition-all' onClick = {() => deleteProject(project.id)} />
+                                    <div onClick={e => e.stopPropagation()}>
+                                        <TrashIcon className='absolute top-3 right-3 scale-0 group-hover:scale-100 bg-white p-1.5 size-7 rounded text-red-500 text-xl cursor-pointer transition-all' onClick={() => deleteProject(project.id)} />
 
-                                     
+
                                     </div>
                                 </div>
                             ))}
@@ -123,7 +133,7 @@ const MyProjects = () => {
                 ) : (
                     <div className='flex flex-col items-center justify-center h-[80vh] '>
                         <h1 className='text-3xl font-semibold text-gray-300 '>You Have No Projects!</h1>
-                        <button onClick={() => navigate('/')}  className='text-white px-7 py-2 rounded-md bg-indigo-500 hover:bg-indigo-600 active:scale-95 transition-all'>
+                        <button onClick={() => navigate('/')} className='text-white px-7 py-2 rounded-md bg-indigo-500 hover:bg-indigo-600 active:scale-95 transition-all'>
                             Create New
                         </button>
                     </div>
