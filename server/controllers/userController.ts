@@ -308,7 +308,7 @@ export const purchaseCredits = async (req: Request, res: Response) => {
         const plans = {
             basic: { credits: 100, amount: 5 },
             pro: { credits: 400, amount: 19 },
-            Enterprise: { credits: 1000, amount: 49 },
+            enterprise: { credits: 1000, amount: 49 },
         }
 
         const userId = req.userId;
