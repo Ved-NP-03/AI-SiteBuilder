@@ -10,7 +10,7 @@ import path from 'node:path';
 
 
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000;  // ✅ NEW
 
 const corsOptions = {
     origin: process.env.TRUSTED_ORIGINS?.split(',') || [],
