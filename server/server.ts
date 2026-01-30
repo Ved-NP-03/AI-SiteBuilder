@@ -10,6 +10,7 @@ import path from 'node:path';
 
 
 const app = express();
+app.set("trust proxy", 1);
 const port = process.env.PORT || 3000;  // ✅ NEW
 
 const corsOptions = {
