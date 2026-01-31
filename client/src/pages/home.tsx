@@ -41,7 +41,7 @@ const Home = () => {
     <section className="flex flex-col items-center text-white text-sm pb-20 px-4 font-poppins">
 
 
-      <Link to="/FreeTrial" className="flex items-center gap-2 border border-slate-700 rounded-full p-1 pr-3 text-sm mt-20 cursor-pointer">
+      <Link to="//free-trial" className="flex items-center gap-2 border border-slate-700 rounded-full p-1 pr-3 text-sm mt-20 cursor-pointer">
         <span className="bg-indigo-600 text-xs px-3 py-1 rounded-full">NEW</span>
 
         <p className="flex items-center gap-2">
