@@ -29,8 +29,12 @@ export const auth = betterAuth({
                     // secure:process.env.NODE_ENV === 'production',
                     // sameSite: process.env.NODE_ENV === 'production' ? 'none': 'lax' ,
                     secure: true,        // 🔥 REQUIRED for Safari
-                    sameSite: "none",
+                    sameSite: "none" as const,
                     path: '/',
+                    //add domaine in production
+                    ...(process.env.NODE_ENV === 'production' && process.env.COOKIE_DOMAIN
+                        ? { domain: process.env.COOKIE_DOMAIN }
+                        : {}),
                 }
             }
         }
